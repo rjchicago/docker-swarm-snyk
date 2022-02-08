@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  docker-swarm-snyk:
+    image: rjchicago/docker-swarm-snyk:${VERSION:-latest}
+    container_name: docker-swarm-snyk
+    build: 
+      context: ./service
+    command: "npm run debug"
+    environment:
+      - "SEVERITY=${SEVERITY:-high}"
+    env_file: .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./service/package.json:/docker-swarm-snyk/package.json
+      - ./service/src:/docker-swarm-snyk/src
+      - ./data:/docker-swarm-snyk/data
+    ports:
+      - "3000:3000"
+      - "9229:9229"

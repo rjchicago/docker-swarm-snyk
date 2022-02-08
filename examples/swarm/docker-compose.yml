@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  docker-swarm-snyk:
+    image: rjchicago/docker-swarm-snyk:${VERSION:-latest}
+    environment:
+      - SEVERITY=${SEVERITY:-high}
+    secrets:
+      - source: env_secrets
+        target: /docker-swarm-snyk/.env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - docker-swarm-snyk_data:/docker-swarm-snyk/data
+    ports:
+      - "3000:3000"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+volumes:
+  docker-swarm-snyk_data:
+
+secrets:
+  env_secrets:
+    name: docker-swarm-snyk.v1.env
+    file: .env
