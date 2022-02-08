@@ -10,9 +10,13 @@ const imageRegex = new RegExp(/^([\w\-\./]+):([\w\.\-]+)(@sha256:\w+)?$/i);
 class DockerScanService {
 
     static init = () => {
+        if (!process.env.SNYK_AUTH_TOKEN) {
+            throw Error(`SNYK_AUTH_TOKEN is required.`);
+        }
         DockerScanService.execCmd(`snyk auth --login --token $SNYK_AUTH_TOKEN`);
-        DockerScanService.execCmd(`echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin`);
-        // DockerScanService.execCmd(`docker scan --login --token $SNYK_AUTH_TOKEN --accept-license`);
+        if (process.env.DOCKER_USERNAME && process.env.DOCKER_PASSWORD) {
+            DockerScanService.execCmd(`echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin`);
+        }
     }
 
     static execCmd = (cmd) => {

@@ -9,9 +9,9 @@ With **docker-swarm-snyk** you can enable simple **global image scanning** for y
 
 | Required | Variable                          | Description                                                                           |
 |----------|-----------------------------------|---------------------------------------------------------------------------------------|
-|    *     | DOCKER_USERNAME                   | Docker Hub account.                                                                   |
-|    *     | DOCKER_PASSWORD                   | Docker Hub password. (tip: this can be an <a href="https://docs.docker.com/docker-hub/access-tokens/">access token</a>) |
 |    *     | SNYK_AUTH_TOKEN                   | Auth token for Snyk. (see <a href="https://docs.snyk.io/tutorials/amazon-web-services/aws-code-suite/snyk-security/create-account-and-obtain-a-token">docs</a>)                    |
+|          | DOCKER_USERNAME                   | Docker Hub account. Not required, but useful if Docker Hub rate-limiting is an issue. |
+|          | DOCKER_PASSWORD                   | Docker Hub password. (tip: this can be an <a href="https://docs.docker.com/docker-hub/access-tokens/">access token</a>) |
 |          | JOB_SCAN_INTERVAL_SECONDS  | How frequently to query Swarm for new images to scan. Default is 60 seconds.     |
 |          | JOB_CHECK_INTERVAL_SECONDS | How frequently the Job should update queues. Default is 10 seconds.              |
 |          | JOB_MAX_CONCURRENCY   | Maximum concurrency for image scanning. Default is 1.                                 |
@@ -135,52 +135,17 @@ curl -s -X GET "http://localhost:3000/swarm" | jq
   {
     "stackName": "demo",
     "serviceName": "demo_docker-swarm-snyk",
-    "imageFull": "rjchicago/docker-swarm-snyk:latest@sha256:85353320eab99904dac065464f3d6742f59611d6f22d79bf7cf8df3b1fa6a7c5",
+    "imageFull": "rjchicago/docker-swarm-snyk:latest",
     "image": "rjchicago/docker-swarm-snyk",
     "tag": "latest",
     "sha": "sha256:85353320eab99904dac065464f3d6742f59611d6f22d79bf7cf8df3b1fa6a7c5",
-    "results": "http://localhost:3000/results?image=rjchicago/docker-swarm-snyk:latest@sha256:85353320eab99904dac065464f3d6742f59611d6f22d79bf7cf8df3b1fa6a7c5"
+    "result": "http://localhost:3000/results?image=rjchicago/docker-swarm-snyk:latest",
+    "snyk": "https://app.snyk.io/org/..."
   }
 ]
 ```
 
-> Scans that are complete will display in the `results` link.
-
-### Sample Scan Results
-
-Below is a sample scan based on the above image:tag@sha...
-
-``` txt
-Testing rjchicago/docker-swarm-snyk:latest@sha256:85353320eab99904dac065464f3d6742f59611d6f22d79bf7cf8df3b1fa6a7c5...
-
-Organization:      rjchicago
-Package manager:   apk
-Project name:      docker-image|rjchicago/docker-swarm-snyk:latest
-Docker image:      rjchicago/docker-swarm-snyk:latest@sha256:85353320eab99904dac065464f3d6742f59611d6f22d79bf7cf8df3b1fa6a7c5
-Platform:          linux/amd64
-Base image:        node:16.13.2-alpine3.15
-Licenses:          enabled
-
-✔ Tested 40 dependencies for known issues, no vulnerable paths found.
-
-According to our scan, you are currently using the most secure version of the selected base image
-
--------------------------------------------------------
-
-Testing rjchicago/docker-swarm-snyk:latest@sha256:85353320eab99904dac065464f3d6742f59611d6f22d79bf7cf8df3b1fa6a7c5...
-
-Organization:      rjchicago
-Package manager:   npm
-Target file:       /docker-swarm-snyk/package.json
-Project name:      docker-swarm-snyk
-Docker image:      rjchicago/docker-swarm-snyk:latest@sha256:85353320eab99904dac065464f3d6742f59611d6f22d79bf7cf8df3b1fa6a7c5
-Licenses:          enabled
-
-✔ Tested 112 dependencies for known issues, no vulnerable paths found.
-
-
-Tested 2 projects, no vulnerable paths were found.
-```
+> Scans that are complete will display in the `result` & `snyk` links.
 
 ### UI
 
