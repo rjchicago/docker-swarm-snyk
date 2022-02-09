@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+VERSION=$(jq -r .version service/package.json)
+TAG="v${VERSION}"
+if [ $(git tag -l $TAG ) ]; then
+    echo "TAG EXISTS: $TAG"
+    exit 0
+else
+
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
 REGISTRY_URL=${REGISTRY_URL:-docker.io}
 REGISTRY_USER=${REGISTRY_USER:-}
@@ -33,8 +40,6 @@ function build_and_push {
   TARGET=$T VERSION=$V docker-compose -f $COMPOSE_FILE build
   TARGET=$T VERSION=$V docker-compose -f $COMPOSE_FILE push
 }
-
-VERSION=$(jq -r .version service/package.json)
 
 docker_login
 build_and_push "production" $VERSION
