@@ -43,6 +43,6 @@ build_and_push "production" get_version
 build_and_push "production" "latest"
 docker_logout
 
-TAG=get_version
+TAG="$(get_version)"
 git tag $TAG
 git push origin $TAG
