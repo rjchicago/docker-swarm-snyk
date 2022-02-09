@@ -1,6 +1,7 @@
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const ObjectCache = require('./ObjectCache');
 
 const DATA_PATH = process.env.DATA_PATH || '/docker-swarm-snyk/data';
 const SEVERITY = process.env.SEVERITY || 'high';
@@ -32,9 +33,13 @@ class DockerScanService {
     }
 
     static getSnykUri = (image) => {
+        const cache = ObjectCache.readCache(image).snyk;
+        if (cache) return cache;
         try {
             const cmd = `jq -r .uri ${DockerScanService.getFilename(image)}`;
-            return execSync(cmd).toString().trim();
+            const snyk = execSync(cmd).toString().trim();
+            if (snyk) ObjectCache.setCache(image, {snyk});
+            return snyk;
         } catch (error) {
             console.error(error);
         }
