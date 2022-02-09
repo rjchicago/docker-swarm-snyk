@@ -41,5 +41,5 @@ build_and_push "production" $VERSION
 build_and_push "production" "latest"
 docker_logout
 
-git tag $VERSION
-git push origin $VERSION
+git tag "v${VERSION}"
+git push origin "v${VERSION}"
