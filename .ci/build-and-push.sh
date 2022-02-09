@@ -6,7 +6,7 @@ REGISTRY_URL=${REGISTRY_URL:-docker.io}
 REGISTRY_USER=${REGISTRY_USER:-}
 REGISTRY_PASSWORD=${REGISTRY_PASSWORD:-}
 
-cp example.env .env
+cp .env.example .env
 
 if [[ -z $REGISTRY_USER ]] ; then
   echo "REGISTRY_USER is required" && exit 1
