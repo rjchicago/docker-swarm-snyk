@@ -51,6 +51,3 @@ docker_login
 build_and_push "production" $VERSION
 build_and_push "production" "latest"
 docker_logout
-
-git tag $TAG
-git push origin $TAG
