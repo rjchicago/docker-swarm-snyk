@@ -20,21 +20,29 @@ function docker_login {
   echo "$REGISTRY_PASSWORD" | docker login -u $REGISTRY_USER --password-stdin $REGISTRY_URL
 }
 
+function get_version {
+  echo $(jq -r .version service/package.json)
+}
+
 function docker_logout {
   docker logout $REGISTRY_URL
 }
 
 function build_and_push {
-  TARGET=$1
-  VERSION=$2
+  T=$1
+  V=$2
   echo "build_and_push:
-  - TARGET=$TARGET
-  - VERSION=$VERSION"
-  TARGET=$TARGET VERSION=$VERSION docker-compose -f $COMPOSE_FILE build
-  TARGET=$TARGET VERSION=$VERSION docker-compose -f $COMPOSE_FILE push
+  - TARGET=$T
+  - VERSION=$V"
+  TARGET=$T VERSION=$V docker-compose -f $COMPOSE_FILE build
+  TARGET=$T VERSION=$V docker-compose -f $COMPOSE_FILE push
 }
 
 docker_login
-build_and_push "production" $(jq -r .version service/package.json)
+build_and_push "production" get_version
 build_and_push "production" "latest"
 docker_logout
+
+TAG=get_version
+git tag $TAG
+git push origin $TAG
