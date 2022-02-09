@@ -3,10 +3,16 @@ set -e
 
 VERSION=$(jq -r .version service/package.json)
 TAG="v${VERSION}"
-if [ $(git tag -l $TAG ) ]; then
-    echo "TAG EXISTS: $TAG"
-    exit 0
+
+# exit if tag exists
+git fetch --all --tags
+TAG_EXISTS=$(git tag -l "$TAG")
+if [ ! -z $TAG_EXISTS ]; then
+  echo "TAG EXISTS: $TAG"
+  exit 0
 fi
+echo "BUILDING $TAG"
+git tag $TAG && git push origin $TAG
 
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
 REGISTRY_URL=${REGISTRY_URL:-docker.io}
