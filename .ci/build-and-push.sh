@@ -6,9 +6,6 @@ REGISTRY_URL=${REGISTRY_URL:-docker.io}
 REGISTRY_USER=${REGISTRY_USER:-}
 REGISTRY_PASSWORD=${REGISTRY_PASSWORD:-}
 
-TARGET="production"
-VERSION=$(jq -r .version service/package.json)
-
 if [[ -z $REGISTRY_USER ]] ; then
   echo "REGISTRY_USER is required" && exit 1
 fi
@@ -36,6 +33,6 @@ function build_and_push {
 }
 
 docker_login
-build_and_push "production" $(jq -r .version package.json)
+build_and_push "production" $(jq -r .version service/package.json)
 build_and_push "production" "latest"
 docker_logout
