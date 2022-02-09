@@ -32,7 +32,12 @@ class DockerScanService {
     }
 
     static getSnykUri = (image) => {
-        return DockerScanService.execCmd(`jq -r .uri ${DockerScanService.getFilename(image)}`).trim();
+        try {
+            const cmd = `jq -r .uri ${DockerScanService.getFilename(image)}`;
+            return execSync(cmd).toString().trim();
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     static scanExists = (image) => {
