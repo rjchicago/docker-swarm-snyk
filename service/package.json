@@ -1,5 +1,7 @@
 {
   "name": "docker-swarm-snyk",
+  "version": "0.0.1",
+  "description": "Docker Swarm Snyk",
   "main": "./src/index.ts",
   "scripts": {
     "start": "node ./src/index.js",

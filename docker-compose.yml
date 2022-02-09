@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  docker-swarm-snyk:
+  service:
     image: rjchicago/docker-swarm-snyk:${VERSION:-latest}
     container_name: docker-swarm-snyk
     build: 
