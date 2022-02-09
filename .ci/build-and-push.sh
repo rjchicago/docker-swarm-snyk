@@ -6,7 +6,7 @@ TAG="v${VERSION}"
 if [ $(git tag -l $TAG ) ]; then
     echo "TAG EXISTS: $TAG"
     exit 0
-else
+fi
 
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
 REGISTRY_URL=${REGISTRY_URL:-docker.io}
@@ -46,5 +46,5 @@ build_and_push "production" $VERSION
 build_and_push "production" "latest"
 docker_logout
 
-git tag "v${VERSION}"
-git push origin "v${VERSION}"
+git tag $TAG
+git push origin $TAG
