@@ -1,6 +1,6 @@
 {
   "name": "docker-swarm-snyk",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Docker Swarm Snyk",
   "main": "./src/index.ts",
   "scripts": {
