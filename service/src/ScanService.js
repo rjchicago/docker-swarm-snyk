@@ -8,15 +8,15 @@ const SEVERITY = process.env.SEVERITY || 'high';
 // eslint-disable-next-line no-useless-escape
 const imageRegex = new RegExp(/^([\w\-\./]+):([\w\.\-]+)(@sha256:\w+)?$/i);
 
-class DockerScanService {
+class ScanService {
 
     static init = () => {
         if (!process.env.SNYK_AUTH_TOKEN) {
             throw Error(`SNYK_AUTH_TOKEN is required.`);
         }
-        DockerScanService.execCmd(`snyk auth --login --token $SNYK_AUTH_TOKEN`);
+        ScanService.execCmd(`snyk auth --login --token $SNYK_AUTH_TOKEN`);
         if (process.env.DOCKER_USERNAME && process.env.DOCKER_PASSWORD) {
-            DockerScanService.execCmd(`echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin`);
+            ScanService.execCmd(`echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin`);
         }
     }
 
@@ -36,7 +36,7 @@ class DockerScanService {
         const cache = ObjectCache.readCache(image).snyk;
         if (cache) return cache;
         try {
-            const cmd = `jq -r .uri ${DockerScanService.getFilename(image)}`;
+            const cmd = `jq -r .uri ${ScanService.getFilename(image)}`;
             const snyk = execSync(cmd).toString().trim();
             if (snyk) ObjectCache.setCache(image, {snyk});
             return snyk;
@@ -46,12 +46,12 @@ class DockerScanService {
     }
 
     static scanExists = (image) => {
-        const filename = DockerScanService.getFilename(image);
+        const filename = ScanService.getFilename(image);
         return fs.existsSync(filename) || fs.existsSync(`${filename}.error`);
     }
 
     static errorExists = (image) => {
-        const filename = `${DockerScanService.getFilename(image)}.error`;
+        const filename = `${ScanService.getFilename(image)}.error`;
         return fs.existsSync(filename);
     }
 
@@ -68,8 +68,8 @@ class DockerScanService {
     }
 
     static deleteImage = async (image) => {
-        if (!DockerScanService.validateImage(image)) return;
-        const filename = DockerScanService.getFilename(image);
+        if (!ScanService.validateImage(image)) return;
+        const filename = ScanService.getFilename(image);
         const errorFile = `${filename}.error`;
         if (fs.existsSync(filename)) fs.rmSync(filename);
         if (fs.existsSync(errorFile)) fs.rmSync(errorFile);
@@ -80,7 +80,7 @@ class DockerScanService {
     }
 
     static scan = async (image, callback) => {
-        const filename = DockerScanService.getFilename(image);
+        const filename = ScanService.getFilename(image);
 
         const validateImage = () => {
             if (!imageRegex.test(image)) {
@@ -96,42 +96,57 @@ class DockerScanService {
                 if (cb) cb();
             } catch (error) {
                 console.error(error);
-                return;
+            }
+        };
+
+        const exit = (error) => {
+            try {
+                if (callback) callback(error);
+            } catch (e) {
+                console.error(e);
             }
         };
 
         const checkScanExists = () => {
-            if (DockerScanService.scanExists(image)) {
+            if (ScanService.scanExists(image)) {
                 console.log(`SCAN EXISTS: ${image}`);
                 return;
             }
             next();
         };
 
-        const pullImage = async () => {
-            console.log(`PULLING: ${image}`);
+        const handleChildProcess = async (childProcess, callback) => {
             const errors = [];
+            childProcess.stderr.on('data', chunk => errors.push(chunk.toString()));
+            childProcess.stderr.pipe(process.stderr);
+            childProcess.on('close', (code) => {
+                if (code) errors.unshift(`PROCESS EXITED ${code}: ${image}`);
+                const error = errors.join('\n') || undefined;
+                callback(error);
+            });
+        }
+
+        const writeErrorFile = (error) => {
+            fs.writeFileSync(`${filename}.error`, error);
+        }
+
+        const pullImage = async () => {
             const child = spawn('docker', [ 'pull', image ] );
-            child.stdout.setEncoding('utf8');
-            child.stderr.on('data', chunk => errors.push(chunk.toString()));
-            child.stderr.pipe(process.stderr);
-            child.on('close', (code) => {
-                if (code) {
-                    errors.unshift(`PULL ERROR [EXIT ${code}]: ${image}`);
-                    fs.writeFileSync(`${filename}.error`, errors.join('\n'));
-                    return;
+            handleChildProcess(child, (error) => {
+                if (error) {
+                    writeErrorFile(error);
+                    exit(error);
                 }
                 next();
             });
         };
 
         const scanImage = async () => {
-            console.log(`SCANNING: ${image}`);
             const child = spawn('snyk', [ 'container', 'monitor', `--severity-threshold=${SEVERITY}`, '--json', image,  '&>', filename ], { shell: true } );
-            child.stdout.setEncoding('utf8');
-            // child.stderr.on('data', chunk => fs.appendFileSync(filename, chunk));
-            child.on('close', (code) => {
-                console.log(`SCAN COMPLETE [EXIT ${code}]: ${image}`);
+            handleChildProcess(child, (error) => {
+                if (error) {
+                    writeErrorFile(error);
+                }
                 next();
             });
         };
@@ -147,4 +162,4 @@ class DockerScanService {
     }
 }
 
-module.exports = DockerScanService;
+module.exports = ScanService;

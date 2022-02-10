@@ -5,11 +5,11 @@ const express = require('express');
 const http = require('http');
 
 const DockerService = require('./DockerService');
-const DockerScanService = require('./DockerScanService');
-const DockerScanJob = require('./DockerScanJob');
+const ScanService = require('./ScanService');
+const ScanJob = require('./ScanJob');
 
-DockerScanService.init();
-DockerScanJob.init();
+ScanService.init();
+ScanJob.init();
 
 const app = express();
 const port = process.env.PORT || '3000';
@@ -58,7 +58,7 @@ app.get('/health', (req, res) => {
 
 doc('GET', 'version');
 app.get('/version', (req, res) => {
-    const data = DockerScanService.version;
+    const data = ScanService.version;
     const contentType = typeof data === 'string'
         ? 'text/plain'
         : 'application/json'
@@ -73,13 +73,13 @@ app.get('/swarm', async (req, res) => {
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         const images = DockerService.getSwarmImages();
         images.map((image) => {
-            const hasError = DockerScanService.errorExists(image.imageFull)
-            const hasResults = DockerScanService.scanExists(image.imageFull);
+            const hasError = ScanService.errorExists(image.imageFull)
+            const hasResults = ScanService.scanExists(image.imageFull);
             if (hasResults) {
                 image[hasError ? 'error' : 'result']= `${baseUrl}/results?image=${image.imageFull}`;
             }
             if (hasResults && !hasError) {
-                image.snyk = DockerScanService.getSnykUri(image.imageFull);
+                image.snyk = ScanService.getSnykUri(image.imageFull);
             }
         });
         res.send(filter(images, req.query));
@@ -93,7 +93,7 @@ app.get('/swarm', async (req, res) => {
 app.get('/results', async (req, res) => {
     res.setHeader('content-type', 'text/plain');
     try {
-        const results = DockerScanService.readResults(req.query.image);
+        const results = ScanService.readResults(req.query.image);
         if (results === null) {
             return res.sendStatus(404);
         }
@@ -111,16 +111,16 @@ app.get('/scan', async (req, res) => {
         ? Array.isArray(req.query.image) ? req.query.image : [req.query.image]
         : DockerService.getSwarmImages().map(i => i.imageFull);
     if (Object.prototype.hasOwnProperty.call(req.query, 'force')) {
-        images.forEach(DockerScanService.deleteImage);
+        images.forEach(ScanService.deleteImage);
     }
-    const pushed = DockerScanJob.pushQueue(images);
+    const pushed = ScanJob.pushQueue(images);
     res.setHeader('content-type', 'application/json');
     res.send({pushed});
 });
 
 doc('GET', 'queue');
 app.get('/queue', (req, res) => {
-    const queue = DockerScanJob.getQueue();
+    const queue = ScanJob.getQueue();
     res.setHeader('content-type', 'application/json');
     res.send(queue);
 });
