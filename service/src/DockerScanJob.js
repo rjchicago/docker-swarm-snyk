@@ -36,7 +36,7 @@ class DockerScanJob {
         // push jobs to in-progress...
         while (DockerScanJob.queue.length > 0 && DockerScanJob.inProgress.length < JOB_MAX_CONCURRENCY) {
             const image = DockerScanJob.queue.shift();
-            console.log(`IN-PROGRESS: ${image}`);
+            console.log(`SCAN IN-PROGRESS: ${image}`);
             DockerScanJob.inProgress.push({image, start: new Date()});
             DockerScanService.scan(image);
         }
@@ -50,7 +50,7 @@ class DockerScanJob {
                 !DockerScanJob.inProgress.includes(image) &&
                 !DockerScanService.scanExists(image);
         });
-        newImages.forEach(image => console.log(`PUSH TO QUEUE: ${image}`));
+        newImages.forEach(image => console.log(`SCAN QUEUED: ${image}`));
         DockerScanJob.queue.push(...newImages);
         return newImages;
     }

@@ -96,7 +96,14 @@ class DockerScanService {
                 if (cb) cb();
             } catch (error) {
                 console.error(error);
-                return;
+            }
+        };
+
+        const exit = (error) => {
+            try {
+                if (callback) callback(error);
+            } catch (e) {
+                console.error(e);
             }
         };
 
@@ -108,30 +115,36 @@ class DockerScanService {
             next();
         };
 
-        const pullImage = async () => {
-            console.log(`PULLING: ${image}`);
+        const handleChildProcess = async (childProcess, callback) => {
             const errors = [];
+            childProcess.stderr.on('data', chunk => errors.push(chunk.toString()));
+            childProcess.stderr.pipe(process.stderr);
+            childProcess.on('close', (code) => {
+                if (code) errors.unshift(`PROCESS EXITED ${code}: ${image}`);
+                const error = errors.join('\n') || undefined;
+                callback(error);
+            });
+        }
+
+        const writeErrorFile = (error) => {
+            fs.writeFileSync(`${filename}.error`, error);
+        }
+
+        const pullImage = async () => {
             const child = spawn('docker', [ 'pull', image ] );
-            child.stdout.setEncoding('utf8');
-            child.stderr.on('data', chunk => errors.push(chunk.toString()));
-            child.stderr.pipe(process.stderr);
-            child.on('close', (code) => {
-                if (code) {
-                    errors.unshift(`PULL ERROR [EXIT ${code}]: ${image}`);
-                    fs.writeFileSync(`${filename}.error`, errors.join('\n'));
-                    return;
+            handleChildProcess(child, (error) => {
+                if (error) {
+                    writeErrorFile(error);
+                    exit(error);
                 }
                 next();
             });
         };
 
         const scanImage = async () => {
-            console.log(`SCANNING: ${image}`);
             const child = spawn('snyk', [ 'container', 'monitor', `--severity-threshold=${SEVERITY}`, '--json', image,  '&>', filename ], { shell: true } );
-            child.stdout.setEncoding('utf8');
-            // child.stderr.on('data', chunk => fs.appendFileSync(filename, chunk));
-            child.on('close', (code) => {
-                console.log(`SCAN COMPLETE [EXIT ${code}]: ${image}`);
+            handleChildProcess(child, (error) => {
+                if (error) writeErrorFile(error);
                 next();
             });
         };
